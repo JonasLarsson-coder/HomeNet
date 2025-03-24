@@ -1,0 +1,340 @@
+
+-- FRÅGA 1.Hur många dagar ligger en lägenhet i Skåne i genomsnitt ute till försäljning innan den är såld?
+
+SELECT ROUND(AVG(avslutat - saljstart)) AS genomsnitt_dagar
+FROM objekt
+WHERE avslutat IS NOT NULL;
+
+--SVAR: Lägenheter i skåne ligger ute i genomsnitt 131 dagar
+
+-----------------------------------------------------------------------------------------------------------------------
+
+--Fråga 2.Hur stort arvode får en mäklare i genomsnitt för en 6-rumslägenhet i Malmö?
+SELECT ROUND(AVG(maklararvode)) as arvode_i_kronor FROM objekt
+join homenet.adresser a on a.id = objekt.adress
+WHERE antal_rum = 6 AND ort ='Malmö'
+--SVAR: Genomsnittsarvode för en mäklare som säljer en lägenhet med 6 rum i Malmö är 73583kr
+
+-----------------------------------------------------------------------------------------------------------------------
+
+--Fråga 3.Hur stort arvode får en mäklare i genomsnitt för en 6-rumslägenhet i Helsingborg?
+SELECT ROUND(AVG(maklararvode)) as arvode_i_kronor FROM objekt
+join homenet.adresser a on a.id = objekt.adress
+WHERE antal_rum = 6 AND ort ='Helsingborg'
+--SVAR: Genomsnittsarvodet för en mäklare som säljer en lägenhet med 6 rum i Helsingborg är 149569kr
+
+-----------------------------------------------------------------------------------------------------------------------
+
+--Fråga 4.Vad säljer en lägenhet i genomsnitt för, som är mindre än 50kvm, i Helsingborg?
+SELECT ROUND(AVG(objekt.forsaljningspris)) AS snittpris FROM objekt
+JOIN homenet.adresser a on a.id = objekt.adress
+WHERE storlek <50 AND ort = 'Helsingborg'
+
+--SVAR:Genomsnittspriset för en lägenhet som är mindre än 50kvm i Helsingborg är 5580250kr
+
+-----------------------------------------------------------------------------------------------------------------------
+
+--Fråga 5.Vad säljer en lägenhet i genomsnitt för, som är mindre än 50kvm, i Sjöbo?
+SELECT ROUND(AVG(objekt.forsaljningspris)) AS snittpris FROM objekt
+JOIN homenet.adresser a on a.id = objekt.adress
+WHERE storlek <50 AND ort = 'Sjöbo'
+
+--SVAR: genomsnittspriset för en lägenhet som är mindre än 50kvm i Sjöbo är 11320375kr.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+--Fråga 6.Hur många lägenheter i Skåne säljs för ett högre pris än utgångspriset?
+SELECT COUNT(*) AS lägenheter FROM homenet.objekt
+WHERE forsaljningspris > objekt.utgangspris
+
+--SVAR: 88 lägenheter säljs för ett högre pris än utgångspriset i Skåne.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+--Fråga 7.Hur många lägenheter i Skåne säljs för ett lägre pris än utgångspriset?
+SELECT COUNT(*) AS lägenheter FROM homenet.objekt
+WHERE forsaljningspris < objekt.utgangspris
+
+--SVAR: 12 lägenheter säljs för ett lägre pris än utgångspriset i Skåne.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+--FRÅGA 8.Vad är genomsnittspriset per kvadratmeter i Skåne? a) baserat på försäljningspris b) månadsavgift
+
+SELECT 'försäljningspris' AS baserat_på, ROUND(AVG(forsaljningspris/storlek)) AS genomstnittspriset_i_kr FROM objekt
+JOIN homenet.adresser a on objekt.adress = a.id
+
+UNION
+
+SELECT  'månadsavgift' AS baserat_på, ROUND(AVG(objekt.manadsavgift/storlek)) AS genomstnittspriset_i_kr FROM objekt
+JOIN homenet.adresser a on objekt.adress = a.id
+
+--SVAR:genomsnittspriset per kvadratmeter i Skåne är 95381kr baserat på försäljningspris,
+-- samt 72kr baserat på månadsavgift
+-----------------------------------------------------------------------------------------------------------------------
+--FRÅGA 9.Vad är genomstnittspriset per kvadratmeter i Malmö för en lägenhet med balkong?
+
+SELECT 'försäljningspris' AS genomstnittspriset_per_kvadratmeter, ROUND(AVG(forsaljningspris/storlek)) AS genomstnittspriset_i_kr FROM objekt
+JOIN homenet.adresser a on objekt.adress = a.id
+WHERE ort = 'Malmö' AND balkong = 1
+
+UNION
+
+SELECT  'månadsavgift' AS genomstnittspriset_per_kvadratmeter, ROUND(AVG(objekt.manadsavgift/storlek)) AS genomstnittspriset_i_kr FROM objekt
+JOIN homenet.adresser a on objekt.adress = a.id
+WHERE ort = 'Malmö' AND balkong = 1
+
+--SVAR: genomsnittspriset för en lägenhet med balkong i Malmö är 67147kr baserat på försäljningspris.
+    --genomsnittspriset för en lägenhet med balkong i Malmö är 69kr baserat på månadsavgift.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+--FRÅGA 10.Vad är dyrast i Skåne, lägenheter med balkong eller hiss?
+
+SELECT 'lägenhet_med_balkong' AS lägenhetstyp,
+    ROUND(AVG(forsaljningspris)) AS snittpris FROM objekt
+JOIN homenet.adresser a on objekt.adress = a.id
+WHERE balkong = 1 AND hiss = 0
+UNION
+SELECT 'Lägenhet_med_hiss' AS lägenhetstyp,
+    ROUND(AVG(forsaljningspris)) AS snittpris FROM objekt
+JOIN homenet.adresser a on objekt.adress = a.id
+WHERE hiss = 1 AND balkong = 0
+ORDER BY lägenhetstyp DESC
+--SVAR: Lägenheter med balkong (9362432kr)är i genomsnitt dyrare än lägenheter med hiss(8288780kr)
+
+-----------------------------------------------------------------------------------------------------------------------
+
+--FRÅGA 11.Vad är dyrast i Malmö i genomsnitt;
+-- En lägenhet under 75kvm med balkong eller en lägenhet mellan 75–150kvm utan balkong?
+
+SELECT 'Under_75kvm_med_balkong' AS lägenhetstyp,
+    ROUND(AVG(objekt.forsaljningspris)) AS snittpris_i_malmö_räknat_i_kr
+FROM objekt
+JOIN homenet.adresser a on a.id = objekt.adress
+WHERE ort = 'Malmö' AND storlek < 75 AND balkong = 1
+
+UNION
+
+SELECT '75kvm_till_150kvm_utan_balkong',
+    ROUND(AVG(objekt.forsaljningspris)) AS snittpris_i_malmö_räknat_i_kr
+FROM objekt
+JOIN homenet.adresser a2 on a2.id = objekt.adress
+WHERE ort = 'Malmö' AND storlek BETWEEN 75 AND 150 AND balkong = 0
+
+--SVAR: En lägenhet mellan 75-150kvm utan balkong är i genomsnitt dyrare (5445000kr)
+-- än vad en lägenhet under 75kvm med balkong är (1563000kr).
+
+-----------------------------------------------------------------------------------------------------------------------
+
+--12. Säljer lägenheter i Malmö snabbare än lägenheter i Degeberga?
+SELECT 'Malmö' AS ort,
+    ROUND(AVG(objekt.avslutat - objekt.saljstart)) AS genomsnitt_i_dagar
+FROM objekt
+JOIN adresser
+ON objekt.adress = adresser.id
+WHERE ort = 'Malmö'
+
+UNION
+
+SELECT 'Degeberga' AS ort,
+    ROUND(AVG(objekt.avslutat - objekt.saljstart)) AS genomsnitt_i_dagar FROM objekt
+JOIN adresser
+ON objekt.adress = adresser.id
+WHERE ort = 'Degeberga'
+
+--SVAR: Nej, Degeberga säljer snabbare (genomsnitt 136 dagar).
+
+-----------------------------------------------------------------------------------------------------------------------
+
+--13. Är lägenheter med balkong dyrare än lägeheter utan?
+
+SELECT 'Med balkong' AS lägenhet,
+    ROUND(AVG(objekt.forsaljningspris)) AS genomsnittspris_i_kr FROM objekt
+WHERE balkong = 1
+
+UNION
+
+SELECT 'utan balkong' AS lägenhet,
+    ROUND(AVG(objekt.forsaljningspris)) AS genomsnittspris_i_kr FROM objekt
+WHERE balkong  = 0
+
+--SVAR: Lägenheter med balkong är dyrare.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+--14. Får de som säljer sina lägenheter själv (utan mäklare) mer betalt per kvadratmeter eller inte?
+
+SELECT 'Med mäklare' AS försäljningstyp,
+    ROUND(AVG(objekt.forsaljningspris / storlek)) AS snittpris_kvd FROM objekt
+WHERE maklararvode IS NOT NULL
+
+UNION
+
+SELECT 'Utan mäklare' AS försäljingstyp,
+    ROUND(AVG(objekt.forsaljningspris / storlek)) AS snittpris_kvd FROM objekt
+WHERE maklararvode IS NULL
+
+--SVAR: De som säljer utan mäklare får i genomsnitt mindre betalt per kvadratmeter.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+--15. Skapa en lista på mäklararvoden per kvadratmeter och ort.
+
+SELECT ort, ROUND(AVG(objekt.maklararvode / objekt.storlek)) AS mäklararvode_per_kvd FROM objekt
+JOIN adresser
+ON objekt.adress = adresser.id
+GROUP BY ort
+ORDER BY ort
+
+--SVAR: Lista över alla orter och mäklararvode per kvadratmeter. ORDER BY ort listar orterna i alfabetisk ordning.
+--ORDER BY mäklararvode_per_kvd hade listat arvodet ist för ort.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+--16. Är Mäklararvoden högre eller lägre i förhållande till priset i de större orterna (Malmö, Helsingborg, Lund)
+--jämfört med de mindre orterna (Degeberga, Tomelilla, Skurp, Svedala, Sjöbo)?
+
+SELECT 'större' AS större_eller_mindre_ort,
+     ROUND(AVG(objekt.maklararvode/objekt.forsaljningspris::decimal)*100,2) AS Mäklararvode_i_procent_förhållande_till_pris_i_kr
+
+FROM objekt
+JOIN homenet.adresser a2 on a2.id = objekt.adress
+WHERE ort IN ('Malmö', 'Lund', 'Helsingborg')
+GROUP BY större_eller_mindre_ort
+    UNION
+
+SELECT 'mindre' AS större_eller_mindre_ort,
+     ROUND(AVG(objekt.maklararvode/objekt.forsaljningspris::decimal)*100,2) AS Mäklararvode_i_procent_förhållande_till_pris_i_kr
+
+FROM objekt
+JOIN homenet.adresser a2 on a2.id = objekt.adress
+
+WHERE ort IN ('Degeberga', 'Tomelilla', 'Skurup', 'Svedala', 'Sjöbo')
+GROUP BY större_eller_mindre_ort
+
+--SVAR: Mäklararvodet är högre i de större orterna.
+-- Mäklararvodet är i genomsnitt 1,55% av försäljningspriset jämfört med de mindre orterna där det är 1,53%
+
+-----------------------------------------------------------------------------------------------------------------------
+
+--17. Betalar man mer per rum när man köper en liten lägenhet (mindre än 50kvm)?
+
+
+SELECT '50 kvm eller mindre' AS storlek, ROUND(AVG(objekt.forsaljningspris/objekt.antal_rum)) AS snittpris_per_rum_i_kr FROM objekt
+WHERE storlek <50
+
+UNION
+
+SELECT '50 kvm eller större' AS storlek, ROUND(AVG(objekt.forsaljningspris/objekt.antal_rum)) AS snittpris_per_rum_i_kr FROM objekt
+WHERE storlek >50
+
+--SVAR: Man betalar mer per rum om man köper en liten lägenhet (mindre än 50kvm, 8995808/rum)
+
+-----------------------------------------------------------------------------------------------------------------------
+
+    --18.Hur stora är skillnaderna i pris per rum i de tre klasserna <50kvm, 50–100kvm och >100kvm?
+
+SELECT '<50kvm' AS yta_i_kvadratmeter,
+ ROUND(AVG(objekt.forsaljningspris/objekt.antal_rum)) AS pris_per_rum_i_kr FROM objekt
+WHERE storlek <50
+GROUP BY yta_i_kvadratmeter
+
+UNION
+
+SELECT '50>100kvm' AS yta_i_kvadratmeter,
+ ROUND(AVG(objekt.forsaljningspris/objekt.antal_rum)) AS pris_per_rum_i_kr FROM objekt
+WHERE storlek BETWEEN 50 AND 100
+GROUP BY yta_i_kvadratmeter
+
+UNION
+
+SELECT '>100kvm' AS yta_i_kvadratmeter,
+ ROUND(AVG(objekt.forsaljningspris/objekt.antal_rum)) AS pris_per_rum_i_kr FROM objekt
+WHERE objekt.storlek >100
+GROUP BY yta_i_kvadratmeter
+ORDER BY pris_per_rum_i_kr
+
+--SVAR: Här visas de tre olika klasserna <50kvm, 50-100kvm och >100kvm, samt pris per rum.
+
+-----------------------------------------------------------------------------------------------------------------------
+--19.I vilken ort har vilken mäklare störst negativ skillnad mellan utgångspris och försäljningspris?
+-- Hur stor är den skillnaden i procent?
+
+SELECT ort, fornamn, efternamn, ROUND(forsaljningspris-utgangspris) AS skillnad_i_pris,
+       TO_CHAR (ROUND(forsaljningspris-utgangspris)/(utgangspris::decimal)*100,'fm00d00%') AS procent
+FROM objekt
+JOIN homenet.maklare m on m.id = objekt.maklare
+JOIN homenet.adresser a on a.id = objekt.adress
+ORDER BY skillnad_i_pris
+LIMIT 1
+--SVAR: Maëline Whiten har störst negativ skillnad mellan utgångspris och försäljningspris i orten Lund.
+-- Skillnaden är -14.68%.
+
+(linus godkännde min tolkning under genomgången av homenet)
+
+-----------------------------------------------------------------------------------------------------------------------
+--21. Vilken lägenhet med hiss och balkong, som finns till försäljning i Malmö, är billigast?
+
+SELECT ort, gatuadress, objekt.utgangspris, hiss, balkong, saljstart, objekt.avslutat FROM objekt
+JOIN adresser
+ON objekt.adress = adresser.id
+WHERE ort = 'Malmö' AND objekt.avslutat IS NULL
+AND hiss = 1 AND balkong = 1
+ORDER BY utgangspris
+LIMIT 1
+
+--SVAR: Byvägen 17F, är billigast i Malmö som har hiss och balkong.
+-- Utgångspriset är 2684000kr med säljstart 2023-09-08 och har inte avslutats, vilket betyder att den fortfarande är till salu.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+--22. Vilken lägenhet utan hiss eller balkong, som finns till försäljning utanför Malmö, är dyrast?
+
+SELECT ort, gatuadress, objekt.utgangspris, hiss, balkong, saljstart, objekt.avslutat FROM objekt
+JOIN adresser
+ON objekt.adress = adresser.id
+WHERE ort != 'Malmö' AND objekt.avslutat IS NULL
+AND hiss = 0 AND balkong = 0
+ORDER BY utgangspris DESC
+LIMIT 1
+
+--SVAR: Upproret 28 är den lägenhet utanför Malmö som är till salu utanför Malmö, som saknar både hiss och balkong.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+--Fråga23. Vilken enskild mäklare säljer snabbast lägenheter i Skåne?
+
+SELECT fornamn,efternamn,
+ROUND(AVG(avslutat-saljstart)) AS genomsnitt_i_dagar
+FROM maklare
+JOIN homenet.objekt o on maklare.id = o.maklare
+GROUP by maklare.id
+ORDER BY genomsnitt_i_dagar
+LIMIT 1
+
+--SVAR: Angélique Herrema är den enskilda mäklare som säljer snabbast lägenheter i Skåne.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+--Fråga24. Vilket mäklarbolag säljer flest lägenheter i Skåne?
+
+SELECT maklare.bolag, COUNT(objekt.avslutat) AS antal_sålda_lägenheter FROM objekt
+JOIN maklare
+ON objekt.maklare = maklare.id
+WHERE avslutat IS NOT NULL
+GROUP BY maklare.bolag
+ORDER BY antal_sålda_lägenheter DESC
+LIMIT 1
+
+--SVAR: Mäklarbolaget Bjurfors säljer flest lägenheter (41st) i Skåne.
+
+----------------------------------------------------------------------------------------------------------------
+
+-Bonusfråga: Vilken mäklare är äldst, och vilket bolag jobbar hen på?
+SELECT fornamn, efternamn, personnr, bolag, FROM maklare
+
+ORDER BY personnr
+LIMIT 1
+
+--SVAR: Méthode Convery är den mäklare som är äldst, född 1950-05-14 och jobbar på Privatmäklare.
